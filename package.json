@@ -1,0 +1,28 @@
+{
+  "name": "@algo-trading/backtest-utils",
+  "version": "0.0.1",
+  "description": "AlgoTrading backtest utils",
+  "main": "index.js",
+  "types": "types/main.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev-build": "tsc --watch",
+    "dev-watch": "nodemon ./dist/index.js"
+  },
+  "keywords": [],
+  "author": "AlgoTrading",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^15.12.4",
+    "@typescript-eslint/eslint-plugin": "^4.28.0",
+    "@typescript-eslint/parser": "^4.28.0",
+    "eslint": "^7.29.0",
+    "eslint-config-airbnb-base": "^14.2.1",
+    "eslint-plugin-import": "^2.23.4",
+    "nodemon": "^2.0.7",
+    "typescript": "^4.3.4"
+  },
+  "dependencies": {
+    "dayjs": "^1.10.5"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "lib": ["ES2019"],
+    "target": "esnext",
+    "module": "commonjs",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "declaration": true,
+    "declarationDir": "./types",
+    "removeComments": true,
+    "types": ["node"],
+
+    "outDir": "./dist",
+    "rootDir": "./src",  
+  }
+}
