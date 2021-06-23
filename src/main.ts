@@ -149,7 +149,7 @@ class Positions {
   }
 }
 
-export function getProfit(side: Side, entryPrice: number, closePrice: number): [number, string] {
+function getProfit(side: Side, entryPrice: number, closePrice: number): [number, string] {
   let profit = 0;
 
   if (side === 'long') {
@@ -166,7 +166,7 @@ export function getProfit(side: Side, entryPrice: number, closePrice: number): [
   throw 'Invalid side';
 }
 
-export function getPnl(profit: number) {
+function getPnl(profit: number) {
   return ((profit - 1) * 100).toFixed(2);
 }
 

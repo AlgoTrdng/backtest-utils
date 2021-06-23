@@ -1,6 +1,8 @@
-export declare type Side = 'long' | 'short';
-export declare type Type = 'entry' | 'exit';
-export declare type Position = {
+export = Positions;
+
+declare type Side = 'long' | 'short';
+declare type Type = 'entry' | 'exit';
+declare type Position = {
     price: number;
     time: number;
     pnl: number;
@@ -8,7 +10,7 @@ export declare type Position = {
     size: number;
     side: Side;
 };
-export declare type OverallResults = {
+declare type OverallResults = {
     currentSize: number;
     totalPnl: number;
     totalPnlPercentage: number;
@@ -31,6 +33,5 @@ declare class Positions {
     checkStopLoss(currentPrice: number, time: number): void;
     getOverallResults(): OverallResults;
 }
-export declare function getProfit(side: Side, entryPrice: number, closePrice: number): [number, string];
-export declare function getPnl(profit: number): string;
-export default Positions;
+declare function getProfit(side: Side, entryPrice: number, closePrice: number): [number, string];
+declare function getPnl(profit: number): string;
