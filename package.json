@@ -2,7 +2,7 @@
   "name": "@algo-trading/backtest-utils",
   "version": "0.0.1",
   "description": "AlgoTrading backtest utils",
-  "main": "index.js",
+  "main": "dist/main.js",
   "types": "types/main.d.ts",
   "scripts": {
     "build": "tsc",
