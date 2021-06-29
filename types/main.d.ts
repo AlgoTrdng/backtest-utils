@@ -32,6 +32,7 @@ declare class Positions {
     closePosition(closePrice: number, time: number): void;
     checkStopLoss(currentPrice: number, time: number): void;
     getOverallResults(): OverallResults;
+    inPosition(): boolean;
 }
 declare function getProfit(side: Side, entryPrice: number, closePrice: number): [number, string];
 declare function getPnl(profit: number): string;

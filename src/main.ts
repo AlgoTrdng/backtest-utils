@@ -147,6 +147,10 @@ class Positions {
       averageProfit,
     };
   }
+
+  inPosition() {
+    return this.positions[this.positions.length - 1]?.type === 'entry';
+  }
 }
 
 function getProfit(side: Side, entryPrice: number, closePrice: number): [number, string] {
