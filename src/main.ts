@@ -151,6 +151,18 @@ class Positions {
   inPosition() {
     return this.positions[this.positions.length - 1]?.type === 'entry';
   }
+
+  static getProfit(side: Side, closePrice: number, entryPrice: number): [number, string] {
+    let profit = 0;
+
+    if (side === 'long') {
+      profit = closePrice / entryPrice;
+    } else if (side === 'short') {
+      profit = 1 - (closePrice / entryPrice) + 1;
+    }
+
+    return [profit, getPnl(profit)];
+  }
 }
 
 function getProfit(side: Side, entryPrice: number, closePrice: number): [number, string] {
