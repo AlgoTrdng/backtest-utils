@@ -1,11 +1,11 @@
 {
   "name": "@algo-trading/backtest-utils",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "AlgoTrading backtest utils",
-  "main": "lib/main.js",
-  "types": "types/main.d.ts",
+  "main": "dist/main.js",
+  "types": "types",
   "scripts": {
-    "build": "tsc",
+    "build": "rm -rf types && tsc --declaration --declarationDir ./types",
     "dev-build": "tsc --watch",
     "dev-watch": "nodemon ./dist/index.js"
   },
@@ -23,6 +23,7 @@
     "typescript": "^4.3.4"
   },
   "dependencies": {
+    "binance-api-nodejs": "^0.0.15",
     "dayjs": "^1.10.5"
   }
 }

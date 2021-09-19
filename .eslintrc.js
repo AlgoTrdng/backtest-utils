@@ -29,5 +29,11 @@ module.exports = {
     'max-len': ['error', { code: 150 }],
     'no-use-before-define': 0,
     'no-underscore-dangle': 0,
+    'no-param-reassign': 0,
+    semi: ['error', 'never'],
+    'newline-per-chained-call': 0,
+    '@typescript-eslint/explicit-module-boundary-types': 0,
+    'no-await-in-loop': 0,
+    'import/prefer-default-export': 0,
   },
-};
+}
