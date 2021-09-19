@@ -1,8 +1,8 @@
 {
   "name": "@algo-trading/backtest-utils",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "AlgoTrading backtest utils",
-  "main": "dist/main.js",
+  "main": "dist/index.js",
   "types": "types",
   "scripts": {
     "build": "rm -rf types && tsc --declaration --declarationDir ./types",
