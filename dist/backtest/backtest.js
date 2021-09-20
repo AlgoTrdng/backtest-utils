@@ -1,63 +1,84 @@
 "use strict";
-// import Binance from 'binance-api-nodejs'
-// import {
-//   Boundaries, MergedCandlesticks, Timeframe, UnmergedCandlesticks,
-// } from '../types/types'
-// import constants from './constants'
-// const binance = new Binance()
-// const mergeCandlesticks = (unmergedCandlesticks: UnmergedCandlesticks[]): MergedCandlesticks[] => {
-//   const { candlesticks: baseCandlesticks } = unmergedCandlesticks[0]
-//   const mergedCandlesticks: MergedCandlesticks[] = []
-//   for (let i = 0; i < baseCandlesticks.length; i += 1) {
-//     const { closeTime } = baseCandlesticks[i]
-//     const mergedCandlestick: MergedCandlesticks = [baseCandlesticks[i]]
-//     for (let j = 1; j < unmergedCandlesticks.length; j += 1) {
-//       const { candlesticks: otherTimeframesCandlesticks } = unmergedCandlesticks[j]
-//       const currentCandlestick = otherTimeframesCandlesticks.find(({ closeTime: _closeTime }) => _closeTime === closeTime)
-//       if (currentCandlestick) {
-//         mergedCandlestick[j] = currentCandlestick
-//       }
-//     }
-//     mergedCandlesticks.push(mergedCandlestick)
-//   }
-//   return mergedCandlesticks
-// }
-// const getCandlesticks = async (market: string, timeframes: Timeframe[], boundaries: Boundaries): Promise<MergedCandlesticks[]> => {
-//   const candlesticks: UnmergedCandlesticks[] = []
-//   const uniqueTimeframes = [...new Set(timeframes)].sort((a, b) => constants.minutes[a] - constants.minutes[b])
-//   if (uniqueTimeframes.length === 1) {
-//     const [timeframe] = uniqueTimeframes
-//     const _candlesticks = await binance.spot.candlesticks(market, timeframe, boundaries)
-//     return _candlesticks.map((candlestick) => ([candlestick]))
-//   }
-//   for (let i = 0; i < uniqueTimeframes.length; i += 1) {
-//     const timeframe = uniqueTimeframes[i]
-//     const currentTfCandlesticks = await binance.spot.candlesticks(market, timeframe, boundaries)
-//     candlesticks.push({
-//       candlesticks: currentTfCandlesticks,
-//       timeframe,
-//     })
-//   }
-//   const mergedCandlesticks = mergeCandlesticks(candlesticks)
-//   return mergedCandlesticks
-// }
-// type Options = {
-//   timeframes: Timeframe[],
-//   initialSize?: number,
-//   candlesticksTimeBoundaries: Boundaries,
-// }
-// const backtestSetup = async <T extends {}>(market: string, options: Options, state: T = {}) => {
-//   const mergedCandlesticks = await getCandlesticks(market, options.timeframes, options.candlesticksTimeBoundaries)
-//   // eslint-disable-next-line no-unused-vars
-//   const backtest = (onNewCandlestick: (state: T, candlesticks: MergedCandlesticks) => void) => {
-//     mergedCandlesticks.forEach((_candlesticks) => {
-//       if (onNewCandlestick) {
-//         onNewCandlestick(state, _candlesticks)
-//       }
-//     })
-//   }
-//   return {
-//     backtest,
-//   }
-// }
-// export default backtestSetup
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const binance_api_nodejs_1 = __importDefault(require("binance-api-nodejs"));
+// TODO: Optimize
+const mergeCandlesticks = (markets, unmergedCandlesticks) => {
+    const mergedCandlesticks = {};
+    for (let i = 0; i < markets.length; i += 1) {
+        const market = markets[i];
+        const marketUnmergedCandlesticks = unmergedCandlesticks[market];
+        const timeframes = Object.keys(marketUnmergedCandlesticks);
+        const baseUnmergedCandlesticks = marketUnmergedCandlesticks[timeframes[0]];
+        const marketMergedCandlesticks = baseUnmergedCandlesticks.map((currentCandlestick) => {
+            const { closeTime } = currentCandlestick;
+            const currentMergedCandlestick = {
+                [timeframes[0]]: currentCandlestick,
+            };
+            timeframes.slice(1).forEach((timeframe) => {
+                // @ts-ignore
+                currentMergedCandlestick[timeframe] = marketUnmergedCandlesticks[timeframe].find(({ closeTime: _closeTime }) => _closeTime === closeTime);
+            });
+            return currentMergedCandlestick;
+        });
+        mergedCandlesticks[market] = marketMergedCandlesticks;
+    }
+    return mergedCandlesticks;
+};
+class BacktestClient {
+    binance = new binance_api_nodejs_1.default();
+    markets;
+    timestamps;
+    showLogs;
+    states = {};
+    // Market timeframes have to be sorted from lowest to highest
+    // TODO: sort timeframes automatically
+    constructor(markets, initialState, timestamps, showLogs = false) {
+        this.markets = markets;
+        this.timestamps = timestamps;
+        this.showLogs = showLogs;
+        Object.keys(markets).forEach((market) => {
+            this.states[market] = initialState;
+        });
+    }
+    async fetchAndMergeCandlesticks() {
+        const markets = Object.keys(this.markets);
+        const candlesticks = {};
+        this._log('Loading candlesticks');
+        for (let i = 0; i < markets.length; i += 1) {
+            const market = markets[i];
+            const timeframes = this.markets[market];
+            for (let j = 0; j < timeframes.length; j += 1) {
+                const timeframe = timeframes[j];
+                const currentMarketCandlesticks = await this.binance.spot.candlesticks(market, timeframe, this.timestamps);
+                candlesticks[market] = {
+                    ...candlesticks[market],
+                    [timeframe]: currentMarketCandlesticks,
+                };
+            }
+        }
+        return mergeCandlesticks(markets, candlesticks);
+    }
+    // eslint-disable-next-line no-unused-vars
+    async runBacktest(onNewCandle) {
+        const mergedCandlesticks = await this.fetchAndMergeCandlesticks();
+        this._log('Candlesticks loaded and merged');
+        Object.keys(mergedCandlesticks).forEach((market) => {
+            mergedCandlesticks[market].forEach((candlestick) => {
+                onNewCandle({
+                    state: this.states[market],
+                    candlestick,
+                    market,
+                });
+            });
+        });
+    }
+    _log(message) {
+        if (this.showLogs) {
+            console.log(message);
+        }
+    }
+}
+exports.default = BacktestClient;

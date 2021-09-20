@@ -1,84 +1,108 @@
-// import Binance from 'binance-api-nodejs'
+import Binance from 'binance-api-nodejs'
 
-// import {
-//   Boundaries, MergedCandlesticks, Timeframe, UnmergedCandlesticks,
-// } from '../types/types'
-// import constants from './constants'
+import { minutes } from './constants'
+import {
+  MarketMergedCandlestick, Markets, Timestamps, States, UnmergedCandlesticks, MergedCandlesticks, OnNewCandle,
+} from './types/types'
 
-// const binance = new Binance()
+// TODO: Optimize
+const mergeCandlesticks = (markets: string[], unmergedCandlesticks: UnmergedCandlesticks) => {
+  const mergedCandlesticks: MergedCandlesticks = {}
 
-// const mergeCandlesticks = (unmergedCandlesticks: UnmergedCandlesticks[]): MergedCandlesticks[] => {
-//   const { candlesticks: baseCandlesticks } = unmergedCandlesticks[0]
-//   const mergedCandlesticks: MergedCandlesticks[] = []
+  for (let i = 0; i < markets.length; i += 1) {
+    const market = markets[i]
+    const marketUnmergedCandlesticks = unmergedCandlesticks[market]
+    const timeframes = Object.keys(marketUnmergedCandlesticks) as unknown as (keyof typeof minutes)[]
 
-//   for (let i = 0; i < baseCandlesticks.length; i += 1) {
-//     const { closeTime } = baseCandlesticks[i]
+    const baseUnmergedCandlesticks = marketUnmergedCandlesticks[timeframes[0]]
 
-//     const mergedCandlestick: MergedCandlesticks = [baseCandlesticks[i]]
+    const marketMergedCandlesticks = baseUnmergedCandlesticks.map<MarketMergedCandlestick>((currentCandlestick) => {
+      const { closeTime } = currentCandlestick
 
-//     for (let j = 1; j < unmergedCandlesticks.length; j += 1) {
-//       const { candlesticks: otherTimeframesCandlesticks } = unmergedCandlesticks[j]
+      const currentMergedCandlestick: MarketMergedCandlestick = {
+        [timeframes[0]]: currentCandlestick,
+      }
 
-//       const currentCandlestick = otherTimeframesCandlesticks.find(({ closeTime: _closeTime }) => _closeTime === closeTime)
+      timeframes.slice(1).forEach((timeframe) => {
+        // @ts-ignore
+        currentMergedCandlestick[timeframe] = marketUnmergedCandlesticks[timeframe].find(({ closeTime: _closeTime }) => _closeTime === closeTime)
+      })
 
-//       if (currentCandlestick) {
-//         mergedCandlestick[j] = currentCandlestick
-//       }
-//     }
+      return currentMergedCandlestick
+    })
 
-//     mergedCandlesticks.push(mergedCandlestick)
-//   }
+    mergedCandlesticks[market] = marketMergedCandlesticks
+  }
 
-//   return mergedCandlesticks
-// }
+  return mergedCandlesticks
+}
 
-// const getCandlesticks = async (market: string, timeframes: Timeframe[], boundaries: Boundaries): Promise<MergedCandlesticks[]> => {
-//   const candlesticks: UnmergedCandlesticks[] = []
+class BacktestClient<S extends {}> {
+  binance = new Binance()
 
-//   const uniqueTimeframes = [...new Set(timeframes)].sort((a, b) => constants.minutes[a] - constants.minutes[b])
+  markets: Markets
 
-//   if (uniqueTimeframes.length === 1) {
-//     const [timeframe] = uniqueTimeframes
-//     const _candlesticks = await binance.spot.candlesticks(market, timeframe, boundaries)
-//     return _candlesticks.map((candlestick) => ([candlestick]))
-//   }
+  timestamps: Timestamps
 
-//   for (let i = 0; i < uniqueTimeframes.length; i += 1) {
-//     const timeframe = uniqueTimeframes[i]
+  showLogs: boolean
 
-//     const currentTfCandlesticks = await binance.spot.candlesticks(market, timeframe, boundaries)
+  states: States<S> = {}
 
-//     candlesticks.push({
-//       candlesticks: currentTfCandlesticks,
-//       timeframe,
-//     })
-//   }
+  // Market timeframes have to be sorted from lowest to highest
+  // TODO: sort timeframes automatically
+  constructor(markets: Markets, initialState: S, timestamps: Timestamps, showLogs = false) {
+    this.markets = markets
+    this.timestamps = timestamps
+    this.showLogs = showLogs
 
-//   const mergedCandlesticks = mergeCandlesticks(candlesticks)
-//   return mergedCandlesticks
-// }
+    Object.keys(markets).forEach((market) => {
+      this.states[market] = initialState
+    })
+  }
 
-// type Options = {
-//   timeframes: Timeframe[],
-//   initialSize?: number,
-//   candlesticksTimeBoundaries: Boundaries,
-// }
+  private async fetchAndMergeCandlesticks() {
+    const markets = Object.keys(this.markets)
 
-// const backtestSetup = async <T extends {}>(market: string, options: Options, state: T = {}) => {
-//   const mergedCandlesticks = await getCandlesticks(market, options.timeframes, options.candlesticksTimeBoundaries)
+    const candlesticks: UnmergedCandlesticks = {}
 
-//   // eslint-disable-next-line no-unused-vars
-//   const backtest = (onNewCandlestick: (state: T, candlesticks: MergedCandlesticks) => void) => {
-//     mergedCandlesticks.forEach((_candlesticks) => {
-//       if (onNewCandlestick) {
-//         onNewCandlestick(state, _candlesticks)
-//       }
-//     })
-//   }
+    this._log('Loading candlesticks')
+    for (let i = 0; i < markets.length; i += 1) {
+      const market = markets[i]
+      const timeframes = this.markets[market]
 
-//   return {
-//     backtest,
-//   }
-// }
+      for (let j = 0; j < timeframes.length; j += 1) {
+        const timeframe = timeframes[j]
+        const currentMarketCandlesticks = await this.binance.spot.candlesticks(market, timeframe, this.timestamps)
+        candlesticks[market] = {
+          ...candlesticks[market],
+          [timeframe]: currentMarketCandlesticks,
+        }
+      }
+    }
 
-// export default backtestSetup
+    return mergeCandlesticks(markets, candlesticks)
+  }
+
+  // eslint-disable-next-line no-unused-vars
+  async runBacktest(onNewCandle: OnNewCandle<S>) {
+    const mergedCandlesticks = await this.fetchAndMergeCandlesticks()
+    this._log('Candlesticks loaded and merged')
+    Object.keys(mergedCandlesticks).forEach((market) => {
+      mergedCandlesticks[market].forEach((candlestick) => {
+        onNewCandle({
+          state: this.states[market],
+          candlestick,
+          market,
+        })
+      })
+    })
+  }
+
+  private _log(message: string) {
+    if (this.showLogs) {
+      console.log(message)
+    }
+  }
+}
+
+export default BacktestClient

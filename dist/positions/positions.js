@@ -33,6 +33,7 @@ class PositionsManager {
                 positionsAmt: 0,
                 profitablePositionsAmt: 0,
                 hitRate: null,
+                maxLoss: 0,
             };
             return acc;
         }, {});
@@ -44,17 +45,19 @@ class PositionsManager {
     /**
      * Enters position
      */
-    enterPosition(market, entryPrice, side, positionSizeRelative = 1) {
+    enterPosition({ market, entryPrice, side, relativePositionSize = 1, openTimestamp, }) {
         if (!this.markets.includes(market)) {
             console.log('Invalid market');
             return undefined;
         }
         const { size } = this.statistics[market];
         const position = {
-            entrySize: size * positionSizeRelative,
+            entrySize: size * relativePositionSize,
             state: 'opened',
+            relativePositionSize,
             entryPrice,
             side,
+            openTimestamp,
         };
         this.positions[market].push(position);
         return position;
@@ -62,7 +65,7 @@ class PositionsManager {
     /**
      * Exits position
      */
-    exitPosition(market, closePrice) {
+    exitPosition({ market, closePrice }) {
         const lastPosition = this.getLastPosition(market);
         if (!lastPosition || lastPosition.state !== 'opened') {
             console.log('Position not opened');
@@ -70,21 +73,23 @@ class PositionsManager {
         }
         const { entryPrice, entrySize, side } = lastPosition;
         const pnl = exports.getPnl(side, entryPrice, closePrice);
+        const closeSize = entrySize * pnl;
         const closedPosition = {
             ...lastPosition,
             state: 'closed',
+            closeSize,
             closePrice,
             pnl,
         };
         this.updateOpenedPosition(market, closedPosition);
-        const { size, positionsAmt, profitablePositionsAmt, } = this.statistics[market];
-        const closeSize = entrySize * pnl;
+        const { size, positionsAmt, profitablePositionsAmt, maxLoss, } = this.statistics[market];
         const newSize = size + closeSize - entrySize;
         const updatedMarketStats = {
             size: newSize,
             pnl: newSize / this.baseSize,
             positionsAmt: positionsAmt + 1,
             profitablePositionsAmt: pnl > 1 ? profitablePositionsAmt + 1 : profitablePositionsAmt,
+            maxLoss: Math.min(maxLoss, pnl - 1),
         };
         this.updateMarketStats(market, {
             ...updatedMarketStats,

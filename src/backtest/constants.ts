@@ -22,7 +22,7 @@ const timeframes = {
   10080: '1w',
 } as const
 
-export default {
+export {
   minutes,
   timeframes,
 }

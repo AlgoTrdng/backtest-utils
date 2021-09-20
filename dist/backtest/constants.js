@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.timeframes = exports.minutes = void 0;
 const minutes = {
     '1m': 1,
     '5m': 5,
@@ -11,6 +12,7 @@ const minutes = {
     '1d': 1440,
     '1w': 10080,
 };
+exports.minutes = minutes;
 const timeframes = {
     1: '1m',
     5: '5m',
@@ -22,7 +24,4 @@ const timeframes = {
     1440: '1d',
     10080: '1w',
 };
-exports.default = {
-    minutes,
-    timeframes,
-};
+exports.timeframes = timeframes;

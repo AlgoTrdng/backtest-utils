@@ -1,31 +1,8 @@
-export declare type Side = 'long' | 'short';
-export declare type State = 'opened' | 'closed';
-export declare type Position = {
-    entrySize: number;
-    side: Side;
-    state: State;
-    entryPrice: number;
-    closePrice?: number;
-    pnl?: number;
-    profit?: number;
-};
-export declare type Positions = {
-    [market: string]: Position[];
-};
+import { Side, Positions, Statistics, Position, MarketStatistics, State, EnterPositionParams, ExitPositionParams } from './types/types';
 /**
  * Calculates multiple of initial size
  */
 export declare const getPnl: (side: Side, entryPrice: number, closePrice: number) => number;
-export declare type MarketStatistics = {
-    size: number;
-    pnl: number;
-    positionsAmt: number;
-    profitablePositionsAmt: number;
-    hitRate: number | null;
-};
-export declare type Statistics = {
-    [market: string]: MarketStatistics;
-};
 declare class PositionsManager {
     private positions;
     private statistics;
@@ -35,11 +12,11 @@ declare class PositionsManager {
     /**
      * Enters position
      */
-    enterPosition(market: string, entryPrice: number, side: Side, positionSizeRelative?: number): Position | undefined;
+    enterPosition({ market, entryPrice, side, relativePositionSize, openTimestamp, }: EnterPositionParams): Position | undefined;
     /**
      * Exits position
      */
-    exitPosition(market: string, closePrice: number): Position | undefined;
+    exitPosition({ market, closePrice }: ExitPositionParams): Position | undefined;
     private updateMarketStats;
     private updateOpenedPosition;
     /**

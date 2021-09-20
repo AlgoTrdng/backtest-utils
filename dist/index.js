@@ -18,8 +18,13 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getPnl = exports.PositionsManager = void 0;
+exports.BacktestClient = exports.getPnl = exports.PositionsManager = void 0;
 const positions_1 = __importStar(require("./positions/positions"));
 exports.PositionsManager = positions_1.default;
 Object.defineProperty(exports, "getPnl", { enumerable: true, get: function () { return positions_1.getPnl; } });
+const backtest_1 = __importDefault(require("./backtest/backtest"));
+exports.BacktestClient = backtest_1.default;

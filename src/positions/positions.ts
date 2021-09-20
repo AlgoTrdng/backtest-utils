@@ -1,20 +1,6 @@
-export type Side = 'long' | 'short'
-
-export type State = 'opened' | 'closed'
-
-export type Position = {
-  entrySize: number
-  side: Side
-  state: State
-  entryPrice: number
-  closePrice?: number
-  pnl?: number
-  profit?: number
-}
-
-export type Positions = {
-  [market: string]: Position[]
-}
+import {
+  Side, Positions, Statistics, Position, MarketStatistics, State, EnterPositionParams, ExitPositionParams,
+} from './types/types'
 
 /**
  * Calculates multiple of initial size
@@ -34,18 +20,6 @@ export const getPnl = (side: Side, entryPrice: number, closePrice: number) => {
 
   // eslint-disable-next-line no-throw-literal
   throw 'Invalid side'
-}
-
-export type MarketStatistics = {
-  size: number
-  pnl: number
-  positionsAmt: number
-  profitablePositionsAmt: number
-  hitRate: number | null
-}
-
-export type Statistics = {
-  [market: string]: MarketStatistics
 }
 
 class PositionsManager {
@@ -68,6 +42,7 @@ class PositionsManager {
         positionsAmt: 0,
         profitablePositionsAmt: 0,
         hitRate: null,
+        maxLoss: 0,
       }
       return acc
     }, {})
@@ -81,7 +56,9 @@ class PositionsManager {
   /**
    * Enters position
    */
-  enterPosition(market: string, entryPrice: number, side: Side, positionSizeRelative = 1) {
+  enterPosition({
+    market, entryPrice, side, relativePositionSize = 1, openTimestamp,
+  }: EnterPositionParams) {
     if (!this.markets.includes(market)) {
       console.log('Invalid market')
       return undefined
@@ -90,10 +67,12 @@ class PositionsManager {
     const { size } = this.statistics[market]
 
     const position: Position = {
-      entrySize: size * positionSizeRelative,
+      entrySize: size * relativePositionSize,
       state: 'opened',
+      relativePositionSize,
       entryPrice,
       side,
+      openTimestamp,
     }
 
     this.positions[market].push(position)
@@ -104,7 +83,7 @@ class PositionsManager {
   /**
    * Exits position
    */
-  exitPosition(market: string, closePrice: number) {
+  exitPosition({ market, closePrice }: ExitPositionParams) {
     const lastPosition = this.getLastPosition(market)
 
     if (!lastPosition || lastPosition.state !== 'opened') {
@@ -115,18 +94,20 @@ class PositionsManager {
     const { entryPrice, entrySize, side } = lastPosition
     const pnl = getPnl(side, entryPrice, closePrice)
 
+    const closeSize = entrySize * pnl
+
     const closedPosition: Position = {
       ...lastPosition,
       state: 'closed',
+      closeSize,
       closePrice,
       pnl,
     }
     this.updateOpenedPosition(market, closedPosition)
 
     const {
-      size, positionsAmt, profitablePositionsAmt,
+      size, positionsAmt, profitablePositionsAmt, maxLoss,
     } = this.statistics[market]
-    const closeSize = entrySize * pnl
     const newSize = size + closeSize - entrySize
 
     const updatedMarketStats = {
@@ -134,7 +115,9 @@ class PositionsManager {
       pnl: newSize / this.baseSize,
       positionsAmt: positionsAmt + 1,
       profitablePositionsAmt: pnl > 1 ? profitablePositionsAmt + 1 : profitablePositionsAmt,
+      maxLoss: Math.min(maxLoss, pnl - 1),
     }
+
     this.updateMarketStats(market, {
       ...updatedMarketStats,
       hitRate: updatedMarketStats.profitablePositionsAmt / updatedMarketStats.positionsAmt,

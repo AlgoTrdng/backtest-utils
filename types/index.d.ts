@@ -1,2 +1,3 @@
 import PositionsManager, { getPnl } from './positions/positions';
-export { PositionsManager, getPnl };
+import BacktestClient from './backtest/backtest';
+export { PositionsManager, getPnl, BacktestClient };
